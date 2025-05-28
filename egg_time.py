@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
+from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 
 """Fig2 x,y轴原始信号、滤波信号及R峰展示图"""
 
@@ -27,3 +27,17 @@ R_peak_min_distance_ms = 150
 
 
 
+# 定义函数
+
+"""巴特沃斯滤波器"""
+def bandpass_filter(data, fs, lowcut, highcut, order):
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist
+    high = highcut / nyquist
+    if high >= 1.0: high = 0.99
+    if low <= 0: low = 0.001
+    if low >= high: return data
+    sos = butter(order, [low, high], analog=False, btype='band', output='sos')
+    return sosfiltfilt(sos, data)
+
+"""陷波滤波器"""
