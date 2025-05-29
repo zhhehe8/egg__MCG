@@ -111,7 +111,7 @@ def apply_notch_filter(data, notch_freq, quality_factor, fs):
 """ 后面需要修改 find_r_peaks_data"""
 def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile=99):
     if data is None or len(data) == 0: return np.array([])
-    data_max = np.percentile(data)
+    data_max = np.max(data)
     if data_max <= 1e-9: 
         robust_max = np.percentile(data, 99)
         if robust_max <= 1e-9: return np.array([]) 
