@@ -1,5 +1,6 @@
 import numpy as np
 import zhplot
+import os
 import matplotlib.pyplot as plt
 from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 
@@ -169,9 +170,9 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
 
     """  绘制平均心跳周期 """
     # 1.设置x轴
-    cycle_time_r = np.linspace(-pre_r_ms / 1000, (post_r_ms-1) / 1000, total_cycle_samples)
+    cycle_time_axis_r = np.linspace(-pre_r_ms / 1000, (post_r_ms-1) / 1000, total_cycle_samples)
 
-    # 2.绘制平均心跳周期
+    # 2.绘制背景周期数据（随机30条）
     fig, ax = plt.subplots(fontsize = (10, 6))
 
     ax.set_title(f'Averaged Cardiac Cycle\n(Based on 
@@ -183,3 +184,31 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     
     if len(background_cycles_corrected > num_bg_cycles_to_plot):
         indices_to_plot = np.random.choice(len(corrected_background_cycles), num_bg_cycles_to_plot, replace=False)
+    else:
+        indices_to_plot = np.arange(len(background_cycles_corrected))
+    for i in indices_to_plot:
+        ax.plot(cycle_time_axis_r, background_cycles_corrected[i,:], color='lightgray', alpha=0.35, linewidth=0.5)
+    
+    # 3.绘制校正后的平均心跳周期
+    ax.plot(cycle_time_axis_r, averaged_cycle_corrected, color='royalblue', linewidth=2, label='Averaged Cycle')
+
+    """  绘制标准差区域  """
+    ax.fill_between(cycle_time_axis_r, 
+                    averaged_cycle_corrected - std_cycle, 
+                    averaged_cycle_corrected + std_cycle, 
+                    color='royalblue', alpha=0.2, label='±1 Std Dev')
+    
+    ax.legend(loc='best')
+    plt.tight_layout()
+
+    try:
+        output_image_filename = f"{base_filrname}_averaged_cycle.png" ## 输出图片名
+        output_path = os.path.join(output_path, output_image_filename)
+    
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        print(f"成功: 平均心跳周期图已保存到 {output_path}")
+    except Exception as e:
+        print(f"错误: 保存平均心跳周期图时出错: {e}")
+        return False
+    plt.close(fig)  # 关闭图形以释放内存
+  
