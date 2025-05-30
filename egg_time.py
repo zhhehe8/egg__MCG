@@ -4,14 +4,13 @@ Fig2 x,y轴原始信号、滤波信号及R峰展示图
 """
 
 
-
-
 import numpy as np
 import zhplot
 import matplotlib.pyplot as plt
 import os
-from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
-from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks
+# from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
+from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks, averaged_cardias_cycle_plot
+
 
 
 
@@ -36,6 +35,12 @@ Q_factor_notch = 30.0      # 陷波滤波器的品质因数
 """ 设置R峰检测参数 """
 R_peak_min_height_factor = 0.6  # R峰最小高度因子 (相对于数据的最大值) 
 R_peak_min_distance_ms = 200     # R峰最小距离 (毫秒)
+
+
+""" 设置平均心跳周期参数 """
+pre_r_ms = 100  # R峰前的时间窗口 (毫秒)
+post_r_ms = 100  # R峰后的时间窗口 (毫秒)
+output_dir = "/Users/yanchen/Desktop"  # 输出目录
 
 
 """设置信号反转"""
@@ -71,7 +76,7 @@ print("开始在By中寻找 R 峰...")
 R_peaks_By = find_r_peaks_data(By_filtered, fs, R_peak_min_height_factor, R_peak_min_distance_ms, identifier="By信号")
 print(f"在 By_filtered 中找到 {len(R_peaks_By)} 个R峰。")
 
-## # 4.1 标记R峰为红色空心圆圈
+### 4.1 标记R峰为红色空心圆圈
 R_peaks_Bx_y = Bx_filtered[R_peaks_Bx] if len(R_peaks_Bx) > 0 else np.array([])
 
 ### 调整Bx，By信号的y轴所在区间
@@ -84,9 +89,26 @@ Bx_filtered -= 0.5
 print("开始绘制原始信号与滤波信号对比图...")
 plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By)
 
+# 6.绘制平均心跳周期
+averaged_cardiac_cycle_Bx = averaged_cardias_cycle_plot(Bx_filtered, R_peaks_Bx, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="Bx_averaged_cycle")
+averaged_cardiac_cycle_By = averaged_cardias_cycle_plot(By_filtered, R_peaks_By, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="By_averaged_cycle")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 6.保存图片
-
 
 
 print("进程结束！！！")

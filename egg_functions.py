@@ -106,8 +106,8 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     提取R峰
     """
 def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
-                                pre_r_ms, post_r_ms, output_path,
-                                base_filrname, identifier="信号"):
+                                pre_r_ms, post_r_ms, output_dir,
+                                identifier="信号"):
     if data is None or r_peaks_indices is None or len(r_peaks_indices) < 2:
         return False         # 如果数据或R峰索引无效，直接返回
 
@@ -124,7 +124,7 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     for r_peak in r_peaks_indices:
         start_index = r_peak - pre_r_samples
         end_index = r_peak + post_r_samples
-        if start_index >= 0 and end_index < len(data):  # 确保提取范围不超出原始数据边界
+        if start_index >= 0 and end_index <= len(data):  # 确保提取范围不超出原始数据边界
             cycle = data[start_index:end_index]
             all_cycles.append(cycle)
             valid_cycles_count += 1
@@ -145,21 +145,21 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     """ 使用 pre_r_ms 的前30ms作为基线
         窗口，如果 pre_r_ms 不足30ms，
         则使用整个 pre_r_ms """
-    baseline_window = int(min(pre_r_ms, 30) / 1000 * fs)  # 基线窗口大小
-    if baseline_window > 0 and baseline_window <= pre_r_samples:
-        baseline_offset = np.mean(averaged_cycle[:baseline_window])
+    baseline_window_samples = int(min(pre_r_ms, 30) / 1000 * fs)  # 基线窗口大小
+    if baseline_window_samples > 0 and baseline_window_samples <= pre_r_samples:
+        baseline_offset = np.mean(averaged_cycle[:baseline_window_samples])
     else:
         baseline_offset = 0
         print(f"  错误 ({identifier}): 基线校正窗口无效")
     
     # 3.从平均周期中减去基线偏移量
-    averaged_cycle_corrected -= averaged_cycle - baseline_offset
+    averaged_cycle_corrected = averaged_cycle - baseline_offset
 
     # 4.校正背景中的单个R峰周期
     background_cycles_corrected = []
     for cycle in cycles_array:
-        if baseline_window > 0 and baseline_window <= pre_r_samples:
-            individual_baseline_offset = np.mean(cycle[:baseline_window])
+        if baseline_window_samples > 0 and baseline_window_samples <= pre_r_samples:
+            individual_baseline_offset = np.mean(cycle[:baseline_window_samples])
             background_cycles_corrected.append(cycle - individual_baseline_offset)
         else:
             background_cycles_corrected.append(cycle)   # 如果窗口无效，不校正单个周期
@@ -173,17 +173,16 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     cycle_time_axis_r = np.linspace(-pre_r_ms / 1000, (post_r_ms-1) / 1000, total_cycle_samples)
 
     # 2.绘制背景周期数据（随机30条）
-    fig, ax = plt.subplots(fontsize = (10, 6))
+    fig, ax = plt.subplots(figsize = (10, 6))
 
-    ax.set_title(f'Averaged Cardiac Cycle\n(Based on 
-                 {valid_cycles_count} cycles)', fontsize = 16)
+    ax.set_title(f'Averaged Cardiac Cycle\n(Based on {valid_cycles_count} cycles)', fontsize=16)
     ax.set_xlabel('Time relative to R-peak (s)', fontsize=12)
     ax.set_ylabel('Signal Magnitude (pT)', fontsize=12)
     
     num_bg_cycles_to_plot = min(len(background_cycles_corrected),30)
     
-    if len(background_cycles_corrected > num_bg_cycles_to_plot):
-        indices_to_plot = np.random.choice(len(corrected_background_cycles), num_bg_cycles_to_plot, replace=False)
+    if len(background_cycles_corrected) > num_bg_cycles_to_plot:
+        indices_to_plot = np.random.choice(len(background_cycles_corrected), num_bg_cycles_to_plot, replace=False)
     else:
         indices_to_plot = np.arange(len(background_cycles_corrected))
     for i in indices_to_plot:
@@ -202,13 +201,16 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     plt.tight_layout()
 
     try:
-        output_image_filename = f"{base_filrname}_averaged_cycle.png" ## 输出图片名
-        output_path = os.path.join(output_path, output_image_filename)
+        output_image_filename = f"{base_filename}_averaged_cycle_corrected.png" ## 输出图片名
+        output_dir = os.path.join(output_dir, output_image_filename)
     
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        print(f"成功: 平均心跳周期图已保存到 {output_path}")
+        plt.savefig(output_dir, dpi=300, bbox_inches='tight')
+        print(f"成功: 平均心跳周期图已保存到 {output_dir}")
     except Exception as e:
         print(f"错误: 保存平均心跳周期图时出错: {e}")
         return False
-    plt.close(fig)  # 关闭图形以释放内存
+    finally:
+        plt.close(fig)  # 关闭图形以释放内存
+    
+
   
