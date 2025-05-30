@@ -32,7 +32,7 @@ def apply_notch_filter(data, notch_freq, quality_factor, fs):
 
 
 """R峰检测函数"""
-def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 99):
+def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 95):
     if data is None or len(data) == 0: return np.array([])
     data_max = np.percentile(data, percentile)
     if data_max <= 1e-9: return np.array([])  
@@ -49,6 +49,7 @@ def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="
 
 
 """定义绘图函数"""
+## 第一张图：原始信号和滤波信号（包含R峰）
 def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By):
     fig, axs = plt.subplots(2, 2, figsize=(16, 8), sharex=True)
 
@@ -59,7 +60,7 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     axs[0, 0].grid(True)
     axs[0, 0].legend()
     plt.xlim(0, 40)
-    axs[0, 0].set_ylim(0, 30)
+    axs[0, 0].set_ylim(0, 80)
 
     # By 原始信号
     axs[0, 1].plot(time, By_raw, label='By_Raw', color='royalblue', alpha=0.7)
@@ -69,7 +70,7 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     axs[0, 1].grid(True)
     axs[0, 1].legend()
     plt.xlim(0, 40)
-    axs[0, 1].set_ylim(0, 30)
+    axs[0, 1].set_ylim(0, 80)
 
     # Bx 滤波信号及R峰
     axs[1, 0].plot(time, Bx_filtered, label='Bx_filtered', color='royalblue')
@@ -97,4 +98,88 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     plt.tight_layout()
     plt.show()
 
+
+
+### 求出平均心跳周期，绘图展示并保存
+    """
+    提取R峰
+    """
+def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
+                                pre_r_ms, post_r_ms, output_path,
+                                base_filrname, identifier="信号"):
+    if data is None or r_peaks_indices is None or len(r_peaks_indices) < 2:
+        return False         # 如果数据或R峰索引无效，直接返回
+
+    pre_r_samples = int(pre_r_ms / 1000 * fs)
+    post_r_samples = int(post_r_ms / 1000 * fs)
+    total_cycle_samples = pre_r_samples + post_r_samples
+
+    if total_cycle_samples <= 0:
+        print(f"  错误 ({identifier}): pre_r_ms 和 post_r_ms 的总和必须大于0。")
+        return False          
     
+    all_cycles = []
+    valid_cycles_count = 0
+    for r_peak in r_peaks_indices:
+        start_index = r_peak - pre_r_samples
+        end_index = r_peak + post_r_samples
+        if start_index >= 0 and end_index < len(data):  # 确保提取范围不超出原始数据边界
+            cycle = data[start_index:end_index]
+            all_cycles.append(cycle)
+            valid_cycles_count += 1
+
+    if valid_cycles_count < 2:
+        print(f"  错误 ({identifier}): 有效的心跳周期少于2个，无法计算平均周期。")
+        return False
+    
+    cycles_array = np.array(all_cycles)  # 将周期列表转换为NumPy数组
+
+
+    """ --- R峰基线校正--- """
+    # 1.计算R峰的原始平均周期和标准差
+    averaged_cycle = np.mean(cycles_array, axis=0)   # 提取的所有周期的平均值
+    std_cycle = np.std(cycles_array, axis=0)       # 提取的所有周期的标准差
+
+    # 2.从原始平均周期中确定基线偏移量
+    """ 使用 pre_r_ms 的前30ms作为基线
+        窗口，如果 pre_r_ms 不足30ms，
+        则使用整个 pre_r_ms """
+    baseline_window = int(min(pre_r_ms, 30) / 1000 * fs)  # 基线窗口大小
+    if baseline_window > 0 and baseline_window <= pre_r_samples:
+        baseline_offset = np.mean(averaged_cycle[:baseline_window])
+    else:
+        baseline_offset = 0
+        print(f"  错误 ({identifier}): 基线校正窗口无效")
+    
+    # 3.从平均周期中减去基线偏移量
+    averaged_cycle_corrected -= averaged_cycle - baseline_offset
+
+    # 4.校正背景中的单个R峰周期
+    background_cycles_corrected = []
+    for cycle in cycles_array:
+        if baseline_window > 0 and baseline_window <= pre_r_samples:
+            individual_baseline_offset = np.mean(cycle[:baseline_window])
+            background_cycles_corrected.append(cycle - individual_baseline_offset)
+        else:
+            background_cycles_corrected.append(cycle)   # 如果窗口无效，不校正单个周期
+    
+    background_cycles_corrected = np.array(background_cycles_corrected)
+
+    """ 基线校正完成 """
+
+    """  绘制平均心跳周期 """
+    # 1.设置x轴
+    cycle_time_r = np.linspace(-pre_r_ms / 1000, (post_r_ms-1) / 1000, total_cycle_samples)
+
+    # 2.绘制平均心跳周期
+    fig, ax = plt.subplots(fontsize = (10, 6))
+
+    ax.set_title(f'Averaged Cardiac Cycle\n(Based on 
+                 {valid_cycles_count} cycles)', fontsize = 16)
+    ax.set_xlabel('Time relative to R-peak (s)', fontsize=12)
+    ax.set_ylabel('Signal Magnitude (pT)', fontsize=12)
+    
+    num_bg_cycles_to_plot = min(len(background_cycles_corrected),30)
+    
+    if len(background_cycles_corrected > num_bg_cycles_to_plot):
+        indices_to_plot = np.random.choice(len(corrected_background_cycles), num_bg_cycles_to_plot, replace=False)

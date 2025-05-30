@@ -1,3 +1,11 @@
+"""
+Fig2 x,y轴原始信号、滤波信号及R峰展示图
+
+"""
+
+
+
+
 import numpy as np
 import zhplot
 import matplotlib.pyplot as plt
@@ -5,7 +13,7 @@ import os
 from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks
 
-"""Fig2 x,y轴原始信号、滤波信号及R峰展示图"""
+
 
 # 1. 加载数据
 data = np.loadtxt(r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt', skiprows=2, encoding="utf-8")
@@ -26,7 +34,7 @@ notch_freq = 50.0    # Hz, 工频干扰频率
 Q_factor_notch = 30.0      # 陷波滤波器的品质因数
 
 """ 设置R峰检测参数 """
-R_peak_min_height_factor = 0.7  # R峰最小高度因子 (相对于数据的最大值) 
+R_peak_min_height_factor = 0.6  # R峰最小高度因子 (相对于数据的最大值) 
 R_peak_min_distance_ms = 200     # R峰最小距离 (毫秒)
 
 
