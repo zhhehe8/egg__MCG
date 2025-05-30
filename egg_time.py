@@ -42,6 +42,10 @@ pre_r_ms = 100  # R峰前的时间窗口 (毫秒)
 post_r_ms = 100  # R峰后的时间窗口 (毫秒)
 output_dir = "/Users/yanchen/Desktop"  # 输出目录
 
+# 获取读取的文件名
+input_file_path = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt'
+base_filename = os.path.splitext(os.path.basename(input_file_path))[0]
+
 
 """设置信号反转"""
 reverse_Bx_signal = False  
@@ -92,8 +96,6 @@ plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peak
 # 6.绘制平均心跳周期
 averaged_cardiac_cycle_Bx = averaged_cardias_cycle_plot(Bx_filtered, R_peaks_Bx, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="Bx_averaged_cycle")
 averaged_cardiac_cycle_By = averaged_cardias_cycle_plot(By_filtered, R_peaks_By, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="By_averaged_cycle")
-
-
 
 
 
