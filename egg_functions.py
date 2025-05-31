@@ -183,13 +183,13 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
         ax.plot(cycle_time_axis_r, background_cycles_corrected[i,:], color='lightgray', alpha=0.35, linewidth=0.5)
     
     # 3.绘制校正后的平均心跳周期
-    ax.plot(cycle_time_axis_r, averaged_cycle_corrected, color='salmon', linewidth=2, label='Averaged Cycle')
+    ax.plot(cycle_time_axis_r, averaged_cycle_corrected, color='tomato', linewidth=2, label='Averaged Cycle')
 
     """  绘制标准差区域  """
     ax.fill_between(cycle_time_axis_r, 
                     averaged_cycle_corrected - std_cycle, 
                     averaged_cycle_corrected + std_cycle, 
-                    color='salmon', alpha=0.2, label='±1 Std Dev')
+                    color='tomato', alpha=0.2, label='±1 Std Dev')
     
     ax.legend(loc='best')
     plt.tight_layout()

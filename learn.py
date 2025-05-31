@@ -207,16 +207,13 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     finally:
         plt.close(fig)  # 关闭图形以释放内存
     
+### ---- 主程序开始 ---- ###
+# 1. 加载数据
 
 """输入输出目录"""
 input_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt'  # 输入数据文件路径
 output_dir = r"C:\Users\Xiaoning Tan\Desktop\egg_figure"  # 输出目录
 
-
-
-### ---- 主程序开始 ---- ###
-
-# 1. 加载数据
 data = np.loadtxt(input_dir, skiprows=2, encoding="utf-8")
 Bx_raw = data[:, 0]
 By_raw = data[:, 1]
