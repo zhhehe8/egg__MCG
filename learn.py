@@ -321,21 +321,3 @@ averaged_cardias_cycle_plot(
 )
 
 print("\n进程结束！！！")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 6.保存图片
-
-
