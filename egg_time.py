@@ -13,9 +13,14 @@ from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data
 
 
 
+### ---- 主程序开始 ---- ###
 
 # 1. 加载数据
-data = np.loadtxt(r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt', skiprows=2, encoding="utf-8")
+"""输入输出目录"""
+input_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt'  # 输入数据文件路径
+output_dir = r"C:\Users\Xiaoning Tan\Desktop\egg_figure"  # 输出目录
+
+data = np.loadtxt(input_dir, skiprows=2, encoding="utf-8")
 Bx_raw = data[:, 0]
 By_raw = data[:, 1]
 fs = 1000  # 采样率
@@ -38,9 +43,13 @@ R_peak_min_distance_ms = 200     # R峰最小距离 (毫秒)
 
 
 """ 设置平均心跳周期参数 """
-pre_r_ms = 100  # R峰前的时间窗口 (毫秒)
+pre_r_ms = 100   # R峰前的时间窗口 (毫秒)
 post_r_ms = 100  # R峰后的时间窗口 (毫秒)
-output_dir = "/Users/yanchen/Desktop"  # 输出目录
+
+
+# 自动从数据文件路径提取 base_filename
+base_filename = os.path.splitext(os.path.basename(input_dir))[0]
+output_dir = output_dir  # 保持后续变量一致
 
 
 """设置信号反转"""
@@ -87,30 +96,31 @@ Bx_filtered -= 0.5
 # 5. 绘制结果
 # 绘制Bx和By原始信号和滤波信号
 print("开始绘制原始信号与滤波信号对比图...")
-plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By)
+fig1 = plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By)
+plt.close(fig1)  # 关闭图形以释放内存
 
 # 6.绘制平均心跳周期
-averaged_cardiac_cycle_Bx = averaged_cardias_cycle_plot(Bx_filtered, R_peaks_Bx, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="Bx_averaged_cycle")
-averaged_cardiac_cycle_By = averaged_cardias_cycle_plot(By_filtered, R_peaks_By, fs, pre_r_ms=pre_r_ms, post_r_ms=post_r_ms, output_dir=output_dir, signal_name="By_averaged_cycle")
+print("\n开始处理Bx信号的平均心跳周期...")
+averaged_cardias_cycle_plot(
+    data=Bx_filtered,
+    r_peaks_indices=R_peaks_Bx,
+    fs=fs,
+    pre_r_ms=pre_r_ms,
+    post_r_ms=post_r_ms,
+    output_dir=output_dir, 
+    base_filename=base_filename, 
+    identifier="Bx_Filtered"
+)
+print("\n开始处理By信号的平均心跳周期...")
+averaged_cardias_cycle_plot(
+    data=By_filtered,
+    r_peaks_indices=R_peaks_By,
+    fs=fs,
+    pre_r_ms=pre_r_ms,
+    post_r_ms=post_r_ms,
+    output_dir=output_dir, 
+    base_filename=base_filename, 
+    identifier="By_Filtered"
+)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 6.保存图片
-
-
-print("进程结束！！！")
-
-quit()
+print("\n进程结束！！！")
