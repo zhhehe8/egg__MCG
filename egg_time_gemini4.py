@@ -89,7 +89,7 @@ def load_cardiac_data(filepath, skip_header, file_encoding='utf-8'):
         print(f"  读取文件 '{os.path.basename(filepath)}' 或解析数据时出错: {e}")
         return None, None
 
-def apply_bandpass_filter(data, lowcut, highcut, fs, order):
+def bandpass_filter(data, fs, lowcut, highcut, order):      #bandpass_filter 修改完毕
     if data is None: return None
     nyquist = 0.5 * fs
     low = lowcut / nyquist
@@ -100,7 +100,7 @@ def apply_bandpass_filter(data, lowcut, highcut, fs, order):
     sos = butter(order, [low, high], analog=False, btype='band', output='sos')
     return sosfiltfilt(sos, data)
 
-def apply_notch_filter(data, notch_freq, quality_factor, fs):
+def apply_notch_filter(data, notch_freq, quality_factor, fs):  # apply_notch_filter 修改完毕
     if data is None: return None
     nyquist = 0.5 * fs
     freq_normalized = notch_freq / nyquist
@@ -108,133 +108,132 @@ def apply_notch_filter(data, notch_freq, quality_factor, fs):
     b, a = iirnotch(freq_normalized, quality_factor)
     return filtfilt(b, a, data)
 
-""" 后面需要修改 find_r_peaks_data"""
-def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile=99):
+""" find_r_peaks_data 修改完毕 """
+def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 95):
     if data is None or len(data) == 0: return np.array([])
-    data_max = np.max(data)
-    if data_max <= 1e-9: 
-        robust_max = np.percentile(data, 99)
-        if robust_max <= 1e-9: return np.array([]) 
-        min_h = robust_max * min_height_factor
-    else:
-        min_h = data_max * min_height_factor
+    data_max = np.percentile(data, percentile)
+    if data_max <= 1e-9: return np.array([])  
+    min_h = min_height_factor * data_max
+    min_distance = int(min_distance_ms / 1000 * fs)
 
-    if min_h <= 1e-9: 
-        data_std = np.std(data)
-        min_h = data_std * 0.5 if data_std > 1e-9 else 1e-3
-    
-    min_dist_samples = int((min_distance_ms / 1000.0) * fs)
-    height_param = min_h if min_h > 1e-9 else None
-    
     try:
-        peaks_indices, _ = find_peaks(data, height=height_param, distance=min_dist_samples)
+        peaks, _ = find_peaks(data, height=min_h, distance=min_distance)
     except Exception as e:
         print(f"  错误 ({identifier}): 调用 find_peaks 时出错: {e}")
         return np.array([])
-    return peaks_indices
+    return peaks
 
-def generate_and_save_average_cycle_plot(data, r_peaks_indices, fs, 
-                                         pre_r_ms, post_r_ms, 
-                                         output_dir, base_filename, 
-                                         identifier="信号"):
+
+
+"""averaged_cardias_cycle_plot 修改完毕"""
+def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
+                                pre_r_ms, post_r_ms, output_dir,base_filename,
+                                identifier="信号"):
     if data is None or r_peaks_indices is None or len(r_peaks_indices) < 2:
-        return False 
+        return False         # 如果数据或R峰索引无效，直接返回
 
-    pre_r_samples = int((pre_r_ms / 1000.0) * fs)
-    post_r_samples = int((post_r_ms / 1000.0) * fs)
+    pre_r_samples = int(pre_r_ms / 1000 * fs)
+    post_r_samples = int(post_r_ms / 1000 * fs)
     total_cycle_samples = pre_r_samples + post_r_samples
 
     if total_cycle_samples <= 0:
-        print(f"  错误 ({identifier}): 提取的周期长度无效 (pre: {pre_r_ms}ms, post: {post_r_ms}ms)。")
-        return False
-
-    all_extracted_cycles = []
+        print(f"  错误 ({identifier}): pre_r_ms 和 post_r_ms 的总和必须大于0。")
+        return False          
+    
+    all_cycles = []
     valid_cycles_count = 0
-    for r_peak_idx in r_peaks_indices:
-        start_idx = r_peak_idx - pre_r_samples
-        end_idx = r_peak_idx + post_r_samples
-        if start_idx >= 0 and end_idx <= len(data):
-            cycle_data = data[start_idx:end_idx]
-            if len(cycle_data) == total_cycle_samples:
-                all_extracted_cycles.append(cycle_data)
-                valid_cycles_count += 1
+    for r_peak in r_peaks_indices:
+        start_index = r_peak - pre_r_samples
+        end_index = r_peak + post_r_samples
+        if start_index >= 0 and end_index <= len(data):  # 确保提取范围不超出原始数据边界
+            cycle = data[start_index:end_index]
+            all_cycles.append(cycle)
+            valid_cycles_count += 1
 
     if valid_cycles_count < 2:
+        print(f"  错误 ({identifier}): 有效的心跳周期少于2个，无法计算平均周期。")
         return False
-
-    cycles_array = np.array(all_extracted_cycles)
     
-    # --- 基线校正 ---
-    # 1. 计算原始平均周期和标准差（用于确定标准差的幅度）
-    original_averaged_cycle = np.mean(cycles_array, axis=0)
-    std_dev_cycle = np.std(cycles_array, axis=0) # 标准差基于原始（未校正）的变异性
-
-    # 2. 从原始平均周期中确定基线偏移量
-    #    使用 PRE_R_PEAK_MS 的前30ms作为基线窗口，如果 PRE_R_PEAK_MS 不足30ms，则使用整个 PRE_R_PEAK_MS
-    baseline_window_duration_ms = min(pre_r_ms, 30) 
-    baseline_samples_count = int((baseline_window_duration_ms / 1000.0) * fs)
-    if baseline_samples_count > 0 and baseline_samples_count <= pre_r_samples : # 确保基线窗口有效
-        baseline_offset_for_avg = np.mean(original_averaged_cycle[:baseline_samples_count])
-    else: # 如果窗口无效（例如pre_r_ms太短），则不进行偏移
-        baseline_offset_for_avg = 0
-        print(f"  警告 ({identifier}): 基线校正窗口无效 (pre_r_ms: {pre_r_ms}ms, calculated samples: {baseline_samples_count}). 平均周期未进行基线校正。")
+    cycles_array = np.array(all_cycles)  # 将周期列表转换为NumPy数组
 
 
-    # 3. 校正平均周期
-    averaged_cycle_corrected = original_averaged_cycle - baseline_offset_for_avg
+    """ --- R峰基线校正--- """
+    # 1.计算R峰的原始平均周期和标准差
+    averaged_cycle = np.mean(cycles_array, axis=0)   # 提取的所有周期的平均值
+    std_cycle = np.std(cycles_array, axis=0)       # 提取的所有周期的标准差
+
+    # 2.从原始平均周期中确定基线偏移量
+    """ 使用 pre_r_ms 的前30ms作为基线
+        窗口，如果 pre_r_ms 不足30ms，
+        则使用整个 pre_r_ms """
+    baseline_window_samples = int(min(pre_r_ms, 30) / 1000 * fs)  # 基线窗口大小
+    if baseline_window_samples > 0 and baseline_window_samples <= pre_r_samples:
+        baseline_offset = np.mean(averaged_cycle[:baseline_window_samples])
+    else:
+        baseline_offset = 0
+        print(f"  错误 ({identifier}): 基线校正窗口无效")
     
-    # 4. 校正背景中的单个周期（用于绘图）
-    corrected_background_cycles = []
+    # 3.从平均周期中减去基线偏移量
+    averaged_cycle_corrected = averaged_cycle - baseline_offset
+
+    # 4.校正背景中的单个R峰周期
+    background_cycles_corrected = []
     for cycle in cycles_array:
-        if baseline_samples_count > 0 and baseline_samples_count <= pre_r_samples:
-            individual_baseline_offset = np.mean(cycle[:baseline_samples_count])
-            corrected_background_cycles.append(cycle - individual_baseline_offset)
+        if baseline_window_samples > 0 and baseline_window_samples <= pre_r_samples:
+            individual_baseline_offset = np.mean(cycle[:baseline_window_samples])
+            background_cycles_corrected.append(cycle - individual_baseline_offset)
         else:
-            corrected_background_cycles.append(cycle) # 如果窗口无效，不校正单个周期
-    corrected_background_cycles = np.array(corrected_background_cycles)
-    # --- 基线校正结束 ---
-
-
-    cycle_time_axis_centered_at_r = np.linspace(-pre_r_ms / 1000.0, (post_r_samples -1) / 1000.0, total_cycle_samples)
-
-    fig, ax = plt.subplots(figsize=(10, 6)) 
-    plot_title = f'Averaged Cardiac Cycle: {base_filename}\n(Based on {valid_cycles_count} cycles, R-peak at 0s, Baseline Corrected)'
-    ax.set_title(plot_title, fontsize=14)
-    ax.set_xlabel('Time relative to R-peak (s)', fontsize=12)
-    ax.set_ylabel('Signal Magnitude (pT, Baseline Corrected)', fontsize=12)
+            background_cycles_corrected.append(cycle)   # 如果窗口无效，不校正单个周期
     
-    ax.set_ylim(0, 2) # 将Y轴范围固定为0到2
+    background_cycles_corrected = np.array(background_cycles_corrected)
 
-    ax.grid(True, which='major', linestyle='-', linewidth='0.7', color='grey')
-    ax.grid(True, which='minor', linestyle=':', linewidth='0.4', color='lightgrey')
-    ax.minorticks_on()
+    """ 基线校正完成 """
 
-    num_bg_cycles_to_plot = min(len(corrected_background_cycles), 20) 
-    indices_to_plot = np.random.choice(len(corrected_background_cycles), num_bg_cycles_to_plot, replace=False) if len(corrected_background_cycles) > num_bg_cycles_to_plot else np.arange(len(corrected_background_cycles))
-    for idx in indices_to_plot:
-        ax.plot(cycle_time_axis_centered_at_r, corrected_background_cycles[idx, :], color='lightgray', alpha=0.35, linewidth=0.7)
+    """  绘制平均心跳周期 """
+    # 1.设置x轴
+    cycle_time_axis_r = np.linspace(-pre_r_ms / 1000, (post_r_ms-1) / 1000, total_cycle_samples)
 
-    # 绘制校正后的平均周期和原始标准差（围绕校正后的均值）
-    ax.plot(cycle_time_axis_centered_at_r, averaged_cycle_corrected, color='orangered', linewidth=2, label='Averaged Cycle (Corrected)')
-    ax.fill_between(cycle_time_axis_centered_at_r,
-                       averaged_cycle_corrected - std_dev_cycle, # std_dev_cycle 未变，但中心线变了
-                       averaged_cycle_corrected + std_dev_cycle,
-                       color='lightcoral', alpha=0.35, label='Avg (Corrected) ± 1 Std Dev')
+    # 2.绘制背景周期数据（随机20条）
+    fig, ax = plt.subplots(figsize = (10, 6))
+
+    ax.set_title(f'{identifier} Averaged Cardiac Cycle\n(Based on {valid_cycles_count} cycles)', fontsize=16)
+    ax.set_xlabel('Time relative to R-peak (s)', fontsize=12)
+    ax.set_ylabel('Signal Magnitude (pT)', fontsize=12)
+    
+    num_bg_cycles_to_plot = min(len(background_cycles_corrected),20)
+    
+    if len(background_cycles_corrected) > num_bg_cycles_to_plot:
+        indices_to_plot = np.random.choice(len(background_cycles_corrected), num_bg_cycles_to_plot, replace=False)
+    else:
+        indices_to_plot = np.arange(len(background_cycles_corrected))
+    for i in indices_to_plot:
+        ax.plot(cycle_time_axis_r, background_cycles_corrected[i,:], color='lightgray', alpha=0.35, linewidth=0.5)
+    
+    # 3.绘制校正后的平均心跳周期
+    ax.plot(cycle_time_axis_r, averaged_cycle_corrected, color='tomato', linewidth=2, label='Averaged Cycle')
+
+    """  绘制标准差区域  """
+    ax.fill_between(cycle_time_axis_r, 
+                    averaged_cycle_corrected - std_cycle, 
+                    averaged_cycle_corrected + std_cycle, 
+                    color='tomato', alpha=0.2, label='±1 Std Dev')
+    
     ax.legend(loc='best')
     plt.tight_layout()
 
     try:
-        output_image_filename = f"{base_filename}_avg_cycle_baseline_corrected.png" # 更新文件名
-        output_image_path = os.path.join(output_dir, output_image_filename)
-        
-        plt.savefig(output_image_path, dpi=300, bbox_inches='tight')
-        print(f"  成功：平均周期图片已保存到: {output_image_path}")
-        plt.close(fig) 
-        return True 
+        output_image_filename = f"{base_filename}_{identifier}_averaged_cycle_corrected.png" ## 输出图片名
+        output_dir = os.path.join(output_dir, output_image_filename)
+    
+        plt.savefig(output_dir, dpi=300, bbox_inches='tight')
+        print(f"成功: 平均心跳周期图已保存到 {output_dir}")
+        plt.show()  # 显示图形
     except Exception as e:
-        print(f"  错误：无法保存平均周期图片到 {output_image_path}。原因: {e}")
-        plt.close(fig) 
+        print(f"错误: 保存平均心跳周期图时出错: {e}")
         return False
+    finally:
+        plt.close(fig)  # 关闭图形以释放内存
+
 
 # --- 主程序 ---
 if __name__ == "__main__":
@@ -282,10 +281,10 @@ if __name__ == "__main__":
                 if ch1_data_raw is None or ch2_data_raw is None:
                     continue
                 
-                ch1_bandpassed = apply_bandpass_filter(ch1_data_raw, LOWCUT_FREQ, HIGHCUT_FREQ, SAMPLING_RATE, order=FILTER_ORDER_BANDPASS)
+                ch1_bandpassed = bandpass_filter(ch1_data_raw, LOWCUT_FREQ, HIGHCUT_FREQ, SAMPLING_RATE, order=FILTER_ORDER_BANDPASS)
                 ch1_filtered = apply_notch_filter(ch1_bandpassed, NOTCH_FREQ_MAINS, Q_FACTOR_NOTCH, SAMPLING_RATE)
                 
-                ch2_bandpassed = apply_bandpass_filter(ch2_data_raw, LOWCUT_FREQ, HIGHCUT_FREQ, SAMPLING_RATE, order=FILTER_ORDER_BANDPASS)
+                ch2_bandpassed = bandpass_filter(ch2_data_raw, LOWCUT_FREQ, HIGHCUT_FREQ, SAMPLING_RATE, order=FILTER_ORDER_BANDPASS)
                 ch2_filtered = apply_notch_filter(ch2_bandpassed, NOTCH_FREQ_MAINS, Q_FACTOR_NOTCH, SAMPLING_RATE)
 
                 if ch1_filtered is None or ch2_filtered is None:
@@ -305,7 +304,7 @@ if __name__ == "__main__":
                 if r_peaks_indices is not None and len(r_peaks_indices) > 1:
                     output_filename_base_for_plot = os.path.splitext(txt_filename)[0]
                     
-                    success = generate_and_save_average_cycle_plot(
+                    success = averaged_cardias_cycle_plot(
                         data=combined_data_filtered, 
                         r_peaks_indices=r_peaks_indices, 
                         fs=SAMPLING_RATE,

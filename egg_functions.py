@@ -8,8 +8,25 @@ from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 
 # 定义函数
 
+
+"""加载心脏数据"""
+def load_cardiac_data(filepath, skip_header, file_encoding = 'utf-8'):
+    try:
+        data = np.loadtxt(filepath, skiprows=skip_header, encoding=file_encoding)
+        if data.ndim == 1 or data.shape[1] < 2:
+            print(f"  错误：数据文件 {os.path.basename(filepath)} 需要至少两列 (Bx, By)。")
+            return None, None 
+        Bx_raw = data[:, 0]
+        By_raw = data[:, 1]
+        return Bx_raw, By_raw
+    except Exception as e:
+        print(f"错误: 加载数据时出错: {e}")
+        return None, None
+
+
 """巴特沃斯滤波器"""
 def bandpass_filter(data, fs, lowcut, highcut, order):
+    if data is None: return None
     nyquist = 0.5 * fs
     low = lowcut / nyquist
     high = highcut / nyquist
@@ -44,56 +61,6 @@ def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="
         return np.array([])
     return peaks
 
-
-
-"""定义绘图函数"""
-## 第一张图：原始信号和滤波信号（包含R峰）
-def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By):
-    fig, axs = plt.subplots(2, 2, figsize=(16, 8), sharex=True)
-
-    # Bx 原始信号
-    axs[0, 0].plot(time, Bx_raw, label='Bx_Raw', color='royalblue', alpha=0.7)
-    axs[0, 0].set_title('Bx Raw Signal')
-    axs[0, 0].set_ylabel('Amplitude')
-    axs[0, 0].grid(True)
-    axs[0, 0].legend()
-    axs[0, 0].set_xlim(0, 40)
-
-    # By 原始信号
-    axs[0, 1].plot(time, By_raw, label='By_Raw', color='royalblue', alpha=0.7)
-    axs[0, 1].set_title('By Raw Signal')
-    axs[0, 1].set_xlabel('Time(s)')
-    axs[0, 1].set_ylabel('Amplitude')
-    axs[0, 1].grid(True)
-    axs[0, 1].legend()
-    axs[0, 1].set_xlim(0, 40)
-
-    # Bx 滤波信号及R峰
-    axs[1, 0].plot(time, Bx_filtered, label='Bx_filtered', color='royalblue')
-    if len(R_peaks_Bx) > 0:
-        axs[1, 0].scatter(time[R_peaks_Bx], Bx_filtered[R_peaks_Bx], facecolors='none', edgecolors='r', marker='o', label='Bx_R peaks')
-    axs[1, 0].set_title('Bx Filtered Signal with R Peaks')
-    axs[1, 0].set_ylabel('Amplitude')
-    axs[1, 0].grid(True)
-    axs[1, 0].legend()
-    axs[0, 0].set_xlim(0, 40)
-    axs[1, 0].set_ylim(-3, 3)
-
-    # By 滤波信号及R峰
-    axs[1, 1].plot(time, By_filtered, label='By_filtered', color='royalblue')
-    if len(R_peaks_By) > 0:
-        axs[1, 1].scatter(time[R_peaks_By], By_filtered[R_peaks_By], facecolors='none', edgecolors='r', marker='o', label='By_R peaks')
-    axs[1, 1].set_title('By Filtered Signal with R Peaks')
-    axs[1, 1].set_xlabel('Time(s)')
-    axs[1, 1].set_ylabel('Amplitude')
-    axs[1, 1].grid(True)
-    axs[1, 1].legend()
-    axs[1, 1].set_xlim(0, 40)
-    axs[1, 1].set_ylim(-3, 3)
-
-    plt.tight_layout()
-    plt.show()
-    return fig  # 返回图形对象以便后续处理或保存
 
 
 
@@ -200,9 +167,62 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
     
         plt.savefig(output_dir, dpi=300, bbox_inches='tight')
         print(f"成功: 平均心跳周期图已保存到 {output_dir}")
-        plt.show()  # 显示图形
+        # plt.show()  # 显示图形
+        return True   # 成功返回True，便于统计saved_avg_cycle_images_count
     except Exception as e:
         print(f"错误: 保存平均心跳周期图时出错: {e}")
         return False
     finally:
         plt.close(fig)  # 关闭图形以释放内存
+
+
+
+
+"""定义绘图函数"""
+## 第一张图：原始信号和滤波信号（包含R峰）
+def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By):
+    fig, axs = plt.subplots(2, 2, figsize=(16, 8), sharex=True)
+
+    # Bx 原始信号
+    axs[0, 0].plot(time, Bx_raw, label='Bx_Raw', color='royalblue', alpha=0.7)
+    axs[0, 0].set_title('Bx Raw Signal')
+    axs[0, 0].set_ylabel('Amplitude')
+    axs[0, 0].grid(True)
+    axs[0, 0].legend()
+    axs[0, 0].set_xlim(0, 40)
+
+    # By 原始信号
+    axs[0, 1].plot(time, By_raw, label='By_Raw', color='royalblue', alpha=0.7)
+    axs[0, 1].set_title('By Raw Signal')
+    axs[0, 1].set_xlabel('Time(s)')
+    axs[0, 1].set_ylabel('Amplitude')
+    axs[0, 1].grid(True)
+    axs[0, 1].legend()
+    axs[0, 1].set_xlim(0, 40)
+
+    # Bx 滤波信号及R峰
+    axs[1, 0].plot(time, Bx_filtered, label='Bx_filtered', color='royalblue')
+    if len(R_peaks_Bx) > 0:
+        axs[1, 0].scatter(time[R_peaks_Bx], Bx_filtered[R_peaks_Bx], facecolors='none', edgecolors='r', marker='o', label='Bx_R peaks')
+    axs[1, 0].set_title('Bx Filtered Signal with R Peaks')
+    axs[1, 0].set_ylabel('Amplitude')
+    axs[1, 0].grid(True)
+    axs[1, 0].legend()
+    axs[0, 0].set_xlim(0, 40)
+    axs[1, 0].set_ylim(-3, 3)
+
+    # By 滤波信号及R峰
+    axs[1, 1].plot(time, By_filtered, label='By_filtered', color='royalblue')
+    if len(R_peaks_By) > 0:
+        axs[1, 1].scatter(time[R_peaks_By], By_filtered[R_peaks_By], facecolors='none', edgecolors='r', marker='o', label='By_R peaks')
+    axs[1, 1].set_title('By Filtered Signal with R Peaks')
+    axs[1, 1].set_xlabel('Time(s)')
+    axs[1, 1].set_ylabel('Amplitude')
+    axs[1, 1].grid(True)
+    axs[1, 1].legend()
+    axs[1, 1].set_xlim(0, 40)
+    axs[1, 1].set_ylim(-3, 3)
+
+    plt.tight_layout()
+    # plt.show()
+    return fig  # 返回图形对象以便后续处理或保存
