@@ -7,8 +7,13 @@ from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 import os
 import re
 import matplotlib.pyplot as plt
-from egg_functions import load_cardiac_data, bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks, averaged_cardias_cycle_plot
-
+from egg_functions import(
+    load_cardiac_data, 
+    bandpass_filter, 
+    apply_notch_filter, 
+    find_r_peaks_data, 
+    plot_signals_with_r_peaks, averaged_cardias_cycle_plot, extract_day_label_from_folder
+)
 
 ### ---- 配置参数 ---- ###
 # 1.加载数据
@@ -65,18 +70,6 @@ day_specific_r_peak_params = {
     "day 20": {"height_factor": 0.45, "distance_ms": 200}, 
     "day 21": {"height_factor": 0.45, "distance_ms": 200},
 }
-
-#  --- 函数定义 ---
-""" 提取天数标签 """
-def extract_day_label_from_folder(folder_name):
-    match_detailed = re.search(r'[Dd](\d+)', folder_name) 
-    if match_detailed:
-        return f"day {match_detailed.group(1)}"
-    match_simple_day = re.search(r'day(\d+)', folder_name, re.IGNORECASE)
-    if match_simple_day:
-        return f"day {match_simple_day.group(1)}"
-    print(f"警告：无法从文件夹 '{folder_name}' 中提取标准日龄标签。将使用文件夹名作为标签。")
-    return folder_name
 
 
 

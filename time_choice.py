@@ -105,29 +105,20 @@ def apply_notch_filter(data, notch_freq, quality_factor, fs):
     b, a = iirnotch(freq_normalized, quality_factor)
     return filtfilt(b, a, data)
 
-def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号"):
+def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 95):
     if data is None or len(data) == 0: return np.array([])
-    data_max = np.max(data)
-    if data_max <= 1e-9:
-        robust_max = np.percentile(data, 99)
-        if robust_max <= 1e-9: return np.array([])
-        min_h = robust_max * min_height_factor
-    else:
-        min_h = data_max * min_height_factor
-
-    if min_h <= 1e-9:
-        data_std = np.std(data)
-        min_h = data_std * 0.5 if data_std > 1e-9 else 1e-3
-
-    min_dist_samples = int((min_distance_ms / 1000.0) * fs)
-    height_param = min_h if min_h > 1e-9 else None
+    data_max = np.percentile(data, percentile)
+    if data_max <= 1e-9: return np.array([])  
+    min_h = min_height_factor * data_max
+    min_distance = int(min_distance_ms / 1000 * fs)
 
     try:
-        peaks_indices, _ = find_peaks(data, height=height_param, distance=min_dist_samples)
+        peaks, _ = find_peaks(data, height=min_h, distance=min_distance)
     except Exception as e:
-        print(f"   错误 ({identifier}): 调用 find_peaks 时出错: {e}")
+        print(f"  错误 ({identifier}): 调用 find_peaks 时出错: {e}")
         return np.array([])
-    return peaks_indices
+    return peaks
+
 
 def calculate_average_cycle_data(data, r_peaks_indices, fs,
                                  pre_r_ms, post_r_ms,

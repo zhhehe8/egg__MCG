@@ -1,7 +1,9 @@
 import numpy as np
 import zhplot
 import os
+import re
 import matplotlib.pyplot as plt
+import argparse
 from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 
 
@@ -226,3 +228,15 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     plt.tight_layout()
     # plt.show()
     return fig  # 返回图形对象以便后续处理或保存
+
+
+""" 提取天数标签 """
+def extract_day_label_from_folder(folder_name):
+    match_detailed = re.search(r'[Dd](\d+)', folder_name) 
+    if match_detailed:
+        return f"day {match_detailed.group(1)}"
+    match_simple_day = re.search(r'day(\d+)', folder_name, re.IGNORECASE)
+    if match_simple_day:
+        return f"day {match_simple_day.group(1)}"
+    print(f"警告：无法从文件夹 '{folder_name}' 中提取标准日龄标签。将使用文件夹名作为标签。")
+    return folder_name
