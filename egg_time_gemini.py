@@ -8,10 +8,10 @@ import os
 
 # --- Configuration Parameters  ---
 SAMPLING_RATE = 1000 
-FILE_PATH = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt' 
+FILE_PATH = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg/B_egg_d20/egg_d20_B30_t1_待破壳.txt'  # 输入数据文件路径 
 SKIP_HEADER_LINES = 2
 FILE_ENCODING = 'utf-8'
-OUTPUT_FIGURE_DIR = r'C:\Users\Xiaoning Tan\Desktop' # *** Modified Picture Output Directory ***
+OUTPUT_FIGURE_DIR = '/Users/yanchen/Desktop'          # 输出目录
 
 # Filter Parameters (General)
 FILTER_ORDER_BANDPASS = 4

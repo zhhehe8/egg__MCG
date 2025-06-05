@@ -105,9 +105,9 @@ def batch_process(input_dir, output_dir, empty_path, fs=1000):
 
 if __name__ == "__main__":
     # 设置路径，批量处理B_egg_d2——B_egg_d21
-    input_folder = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d21'
-    empty_file = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\空载250218\20250218_空载1.txt'
-    output_folder = r'C:\Users\Xiaoning Tan\Desktop\output_cwt\day21'
+    input_folder = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg'
+    empty_file = '/Users/yanchen/Desktop/Projects/egg_2025/鸡蛋空载/空载1.txt'
+    output_folder = '/Users/yanchen/Desktop/Projects/output_Bcwt'
 
 
     # 执行批量处理
