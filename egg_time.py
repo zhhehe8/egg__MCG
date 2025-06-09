@@ -76,15 +76,15 @@ print("滤波完成。")
 Bx_filtered = apply_notch_filter(Bx_filtered, notch_freq, Q_factor_notch, fs)
 By_filtered = apply_notch_filter(By_filtered, notch_freq, Q_factor_notch, fs)
 
-# # 4.寻找R峰
-# print("开始在Bx中寻找 R 峰...")
-# R_peaks_Bx = find_r_peaks_data(Bx_filtered, fs, R_peak_min_height_factor, R_peak_min_distance_ms, identifier="Bx信号")
-# print(f"在 Bx_filtered 中找到 {len(R_peaks_Bx)} 个R峰。")
-# R_peaks_By = find_r_peaks_data(By_filtered, fs, R_peak_min_height_factor, R_peak_min_distance_ms, identifier="By信号")
-# print(f"在 By_filtered 中找到 {len(R_peaks_By)} 个R峰。")
+# 4.寻找R峰
+print("开始在Bx中寻找 R 峰...")
+R_peaks_Bx = find_r_peaks_data(Bx_filtered, fs, R_peak_min_height_factor, R_peak_min_distance_ms, identifier="Bx信号")
+print(f"在 Bx_filtered 中找到 {len(R_peaks_Bx)} 个R峰。")
+R_peaks_By = find_r_peaks_data(By_filtered, fs, R_peak_min_height_factor, R_peak_min_distance_ms, identifier="By信号")
+print(f"在 By_filtered 中找到 {len(R_peaks_By)} 个R峰。")
 
 ### 4.1 标记R峰为红色空心圆圈
-# R_peaks_Bx_y = Bx_filtered[R_peaks_Bx] if len(R_peaks_Bx) > 0 else np.array([])
+R_peaks_Bx_y = Bx_filtered[R_peaks_Bx] if len(R_peaks_Bx) > 0 else np.array([])
 
 ### 调整Bx，By信号的y轴所在区间
 Bx_raw += 5
@@ -94,7 +94,7 @@ Bx_filtered -= 0.5
 # 5. 绘制结果
 # 绘制Bx和By原始信号和滤波信号
 print("开始绘制原始信号与滤波信号对比图...")
-fig1 = plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered)
+fig1 = plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By)
 plt.show()
 # plt.close(fig1)  # 关闭图形以释放内存
 

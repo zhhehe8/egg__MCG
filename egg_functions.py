@@ -3,6 +3,7 @@ import zhplot
 import os
 import re
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import argparse
 from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
 
@@ -159,6 +160,13 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
                     averaged_cycle_corrected - std_cycle, 
                     averaged_cycle_corrected + std_cycle, 
                     color='tomato', alpha=0.2, label='±1 Std Dev')
+    # 设置y轴范围,
+    ax.set_ylim(-0.5, 1)  # 根据数据范围调整y轴
+    # 设置x轴范围，最小间隔0.05秒
+    ax.set_xlim(-pre_r_ms / 1000, post_r_ms / 1000)
+
+    # 2. 设置主刻度间隔为 0.05 s
+    ax.xaxis.set_major_locator(MultipleLocator(0.05))
     
     ax.legend(loc='best')
     plt.tight_layout()
@@ -184,14 +192,16 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
 ## 第一张图：原始信号和滤波信号（包含R峰）
 def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_peaks_Bx, R_peaks_By):
     fig, axs = plt.subplots(2, 2, figsize=(16, 8), sharex=True)
-
+    xlim_0 = 0
+    xlim_1 = 30
     # Bx 原始信号
-    axs[0, 0].plot(time, Bx_raw, label='Bx_Raw', color='royalblue', alpha=0.7)
-    axs[0, 0].set_title('Bx Raw Signal')
+    axs[0, 0].plot(time, Bx_raw, label='Raw_data', color='royalblue', alpha=0.7)
+    axs[0, 0].set_title('Raw Signal')
     axs[0, 0].set_ylabel('Amplitude')
     axs[0, 0].grid(True)
     axs[0, 0].legend()
-    axs[0, 0].set_xlim(0, 40)
+    axs[0, 0].set_xlim(xlim_0, xlim_1)
+    axs[0, 0].set_ylim(0, 25)
 
     # By 原始信号
     axs[0, 1].plot(time, By_raw, label='By_Raw', color='royalblue', alpha=0.7)
@@ -200,17 +210,17 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     axs[0, 1].set_ylabel('Amplitude')
     axs[0, 1].grid(True)
     axs[0, 1].legend()
-    axs[0, 1].set_xlim(0, 40)
+    axs[0, 1].set_xlim(xlim_0, xlim_1)
 
     # Bx 滤波信号及R峰
-    axs[1, 0].plot(time, Bx_filtered, label='Bx_filtered', color='royalblue')
+    axs[1, 0].plot(time, Bx_filtered, label='Filtered_R', color='royalblue')
     if len(R_peaks_Bx) > 0:
         axs[1, 0].scatter(time[R_peaks_Bx], Bx_filtered[R_peaks_Bx], facecolors='none', edgecolors='r', marker='o', label='Bx_R peaks')
-    axs[1, 0].set_title('Bx Filtered Signal with R Peaks')
+    axs[1, 0].set_title('Filtered Signal with R Peaks')
     axs[1, 0].set_ylabel('Amplitude')
     axs[1, 0].grid(True)
     axs[1, 0].legend()
-    axs[0, 0].set_xlim(0, 40)
+    axs[0, 0].set_xlim(xlim_0, xlim_1)
     axs[1, 0].set_ylim(-3, 3)
 
     # By 滤波信号及R峰
@@ -222,7 +232,7 @@ def plot_signals_with_r_peaks(time, Bx_raw, Bx_filtered, By_raw, By_filtered, R_
     axs[1, 1].set_ylabel('Amplitude')
     axs[1, 1].grid(True)
     axs[1, 1].legend()
-    axs[1, 1].set_xlim(0, 40)
+    axs[1, 1].set_xlim(xlim_0, xlim_1)
     axs[1, 1].set_ylim(-3, 3)
 
     plt.tight_layout()

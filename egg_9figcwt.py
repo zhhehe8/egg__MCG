@@ -1,4 +1,4 @@
-"""将9组数据的时频图绘制到同一张图上"""
+"""将8组数据的时频图绘制到同一张图上"""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,8 +71,5 @@ for i, filepath in enumerate(file_paths):
 
 plt.tight_layout()
 
-# # ==== 保存图片 ====
-# fig.savefig(r'C:\Users\Administrator\Desktop\fig_choice_time_domain.png', dpi=300)
-# fig2.savefig(r'C:\Users\Administrator\Desktop\fig_choice_time_freq.png', dpi=300)
 
 plt.show()

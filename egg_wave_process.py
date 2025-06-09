@@ -13,8 +13,8 @@ import zhplot # 如果您使用zhplot进行样式配置，请保留
 
 # --- 配置参数 ---
 # --- 请修改以下输入和输出目录 ---
-root_input_dir = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg'  # 要批量处理的根文件夹路径
-output_dir = '/Users/yanchen/Desktop/Projects/egg_2025/wave_output' # 保存所有输出图像的文件夹
+root_input_dir = '/Users/yanchen/Desktop/Projects/egg_2025/朱鹮_250426'  # 要批量处理的根文件夹路径
+output_dir = '/Users/yanchen/Desktop/Projects/egg_2025/wave_output_朱鹮' # 保存所有输出图像的文件夹
 
 # 信号和文件参数
 fs = 1000  # 采样率 (Hz)

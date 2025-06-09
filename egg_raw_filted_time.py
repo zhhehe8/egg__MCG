@@ -79,7 +79,7 @@ plot_time_limit = 40  # seconds, to display
 # --- 子图1: 原始 Bx 数据 ---
 raw_color = 'cornflowerblue' # 更清晰的颜色
 axs[0].plot(time, Bx_raw_original_for_plot, label='Raw', color=raw_color, linewidth=1.2, alpha=0.9)
-axs[0].set_title('Raw Signal (Time Domain)', fontsize=14)
+axs[0].set_title('Raw Signal', fontsize=14)
 axs[0].set_xlabel('Time (s)', fontsize=12)
 axs[0].set_ylabel('Amplitude (pT or original units)', fontsize=12) # 更具体的单位
 axs[0].legend(loc='upper right', fontsize=10)
