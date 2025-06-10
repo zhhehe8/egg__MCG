@@ -8,11 +8,12 @@ import zhplot
 import matplotlib.pyplot as plt # Matplotlib库，用于数据可视化和绘图
 import pywt # PyWavelets库，用于小波变换计算
 import os # OS库，用于操作系统相关功能，如文件路径处理
-
+import time
+start_time = time.time()
 # --- 配置参数 ---
 # 数据加载配置
-experimental_filepath = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg/B_egg_d20/egg_d20_B30_t1_待破壳.txt' # 实验数据文件路径
-no_load_filepath = '/Users/yanchen/Desktop/Projects/egg_2025/空载250218/20250218_空载1.txt'      # 空载数据文件路径 (请确保此路径正确)
+experimental_filepath = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt' # 实验数据文件路径
+no_load_filepath = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\鸡蛋空载\空载1.txt'      # 空载数据文件路径 (请确保此路径正确)
 
 fs = 1000  # 采样率 (Hz)
 skip_header = 2 # 加载数据时跳过文件开头的行数
@@ -228,3 +229,9 @@ plt.tight_layout(rect=[0, 0.03, 1, 0.94]) # 调整子图布局以适应总标题
 plt.show() # 显示图形
 
 print("绘图完成。")
+
+# 耗费的时间
+
+end_time = time.time()
+print(f"总耗时: {end_time - start_time:.2f} 秒")
+# --- 结束 ---

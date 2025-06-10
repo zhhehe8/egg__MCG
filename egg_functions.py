@@ -50,7 +50,7 @@ def apply_notch_filter(data, notch_freq, quality_factor, fs):
 
 
 """R峰检测函数"""
-def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 95):
+def find_r_peaks_data(data, fs, min_height_factor, min_distance_ms, identifier="信号",percentile = 100):
     if data is None or len(data) == 0: return np.array([])
     data_max = np.percentile(data, percentile)
     if data_max <= 1e-9: return np.array([])  
