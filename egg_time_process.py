@@ -19,8 +19,8 @@ from egg_functions import(
 # 1.加载数据
 
 """输入输出目录"""
-input_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg'  # 输入数据文件路径
-output_fig_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_STFT_100'  # 输出目录
+input_dir = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg'  # 输入数据文件路径
+output_fig_dir = '/Users/yanchen/Desktop/Projects/average_cycles_99'  # 输出目录
 
 skip_header = 2  # 跳过的行数
 file_encoding = "utf-8"  # 文件编码

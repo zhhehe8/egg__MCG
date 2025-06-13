@@ -161,7 +161,7 @@ def averaged_cardias_cycle_plot(data, r_peaks_indices, fs,
                     averaged_cycle_corrected + std_cycle, 
                     color='tomato', alpha=0.2, label='±1 Std Dev')
     # 设置y轴范围,
-    ax.set_ylim(-0.5, 1)  # 根据数据范围调整y轴
+    ax.set_ylim(0, 2)  # 根据数据范围调整y轴
     # 设置x轴范围，最小间隔0.05秒
     ax.set_xlim(-pre_r_ms / 1000, post_r_ms / 1000)
 
