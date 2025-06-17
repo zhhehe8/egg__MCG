@@ -1,16 +1,13 @@
 """ 尝试通过抛物线插值，将R峰的定位提升到亚样本精度。 """
 """ 尝试使用求中位数而不是平均数来计算平均心跳周期。  """
 """ 尝试使用动态时间规整(DTW)对齐心拍，并进行叠加平均。 """
-""" 中位数平均法和DTW平均法的比较。 """
+
 import numpy as np
 import zhplot
 import matplotlib.pyplot as plt
 import os
 from fastdtw import fastdtw
-
-# from scipy.signal import butter, sosfiltfilt, filtfilt, iirnotch, find_peaks
-from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks, averaged_cardias_cycle_plot
-from scipy.signal import find_peaks
+from egg_functions import bandpass_filter, apply_notch_filter, find_r_peaks_data, plot_signals_with_r_peaks
 
 def interpolate_peaks(data, peak_indices):
     """
@@ -143,12 +140,13 @@ def dtw_average_beats(signal_data, precise_peak_indices, pre_samples, post_sampl
     return final_averaged_beat
 
 
+
 ### ---- 主程序开始 ---- ###
 # 1. 加载数据
 
 """输入输出目录"""
-input_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_2025\B_egg\B_egg_d20\egg_d20_B30_t1_待破壳.txt'  # 输入数据文件路径
-output_dir = r'C:\Users\Xiaoning Tan\Desktop\egg_2025'          # 输出目录
+input_dir = '/Users/yanchen/Desktop/Projects/egg_2025/B_egg/B_egg_d20/egg_d20_B30_t1_待破壳.txt'  # 输入数据文件路径
+output_dir = '/Users/yanchen/Desktop'          # 输出目录
 
 data = np.loadtxt(input_dir, skiprows=2, encoding="utf-8")
 Bx_raw = data[:, 0]
@@ -225,17 +223,14 @@ print("对R峰进行抛物线插值以提高精度...")
 precise_R_peaks_By = interpolate_peaks(By_filtered, integer_R_peaks_By)
 print("插值完成。")
 
-# 将精确的R峰索引转换为整数索引
-
-
 
 ### 4.1 标记R峰为红色空心圆圈
 R_peaks_Bx_y = Bx_filtered[integer_R_peaks_Bx] if len(integer_R_peaks_Bx) > 0 else np.array([])
 
-### 调整Bx，By信号的y轴所在区间
-Bx_raw += 5
-By_raw += 8
-Bx_filtered -= 0.5
+# ### 调整Bx，By信号的y轴所在区间
+# Bx_raw += 5
+# By_raw += 8
+# Bx_filtered -= 0.5
 
 # 5. 绘制结果
 # 绘制Bx和By原始信号和滤波信号
