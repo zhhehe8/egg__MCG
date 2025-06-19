@@ -37,17 +37,31 @@ def main():
     # 应用陷波滤波
     bx_filtered_bandpass_notch = mcg.apply_notch_filter(bx_filtered, fs=config.PROCESSING_PARAMS['fs'], **config.FILTER_PARAMS['notch'])
     by_filtered_bandpass_notch = mcg.apply_notch_filter(by_filtered, fs=config.PROCESSING_PARAMS['fs'], **config.FILTER_PARAMS['notch'])
+
     # (可选) 应用小波去噪
+    # if config.FILTER_PARAMS['wavelet']['enabled']:
+    #     print("应用小波去噪...")
+    #     # 创建一个只包含函数所需参数的新字典
+    #     wavelet_args = {
+    #         'wavelet': config.FILTER_PARAMS['wavelet']['wavelet'],
+    #         'level': config.FILTER_PARAMS['wavelet']['level']
+    #     }
+    # 应用小波去噪去除肌电干扰
+    
     if config.FILTER_PARAMS['wavelet']['enabled']:
-        print("应用小波去噪...")
+        print("应用小波去噪以去除肌电信号...") # 更新打印信息
         # 创建一个只包含函数所需参数的新字典
         wavelet_args = {
             'wavelet': config.FILTER_PARAMS['wavelet']['wavelet'],
-            'level': config.FILTER_PARAMS['wavelet']['level']
+            'level': config.FILTER_PARAMS['wavelet']['level'],
+            # 【新增】确保新参数被传递
+            'denoise_levels': config.FILTER_PARAMS['wavelet']['denoise_levels']
         }
         # 使用这个干净的字典进行参数传递
         bx_filtered = mcg.apply_wavelet_denoise(bx_filtered_bandpass_notch, **wavelet_args)
         by_filtered = mcg.apply_wavelet_denoise(by_filtered_bandpass_notch, **wavelet_args)
+    # 最终平滑
+    bx_filtered = mcg.apply_savgol_filter(bx_filtered)
     print("滤波完成。")
 
     # 3. R峰检测与定位
@@ -77,6 +91,8 @@ def main():
     dtw_beat_bx = mcg.get_dtw_beat(all_beats_bx)
     dtw_beat_by = mcg.get_dtw_beat(all_beats_by)
     print("叠加平均计算完成。")
+
+    
 
     # ---- 5. 时频分析 ----
     print("开始时频分析...")

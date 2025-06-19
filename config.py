@@ -5,11 +5,21 @@ from pathlib import Path
 
 # -----------------
 # 1. 文件路径配置
-# -----------------
-# 使用 Path 对象，这比简单的字符串更健壮，能更好地处理跨平台路径问题
-BASE_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025') # 项目的基础目录
-INPUT_FILE = BASE_DIR / 'B_egg' / 'B_egg_d20' / 'egg_d20_B30_t1_待破壳.txt' # 输入数据文件
-OUTPUT_DIR = BASE_DIR / 'Figures' # 所有输出（如图片）的保存目录
+# # -----------------
+# # """ 使用 Path 对象，这比简单的字符串更健壮，能更好地处理跨平台路径问题 """
+# BASE_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025') # 项目的基础目录
+# INPUT_FILE = BASE_DIR / 'B_egg' / 'B_egg_d20' / 'egg_d20_B30_t1_待破壳.txt' # 输入数据文件
+# OUTPUT_DIR = BASE_DIR / 'Figures' # 所有输出（如图片）的保存目录
+
+""" ---- 批量处理数据版本 ---- """
+# 指向包含所有天数文件夹下的根目录
+DATA_ROOT_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025/B_egg') 
+# 为结果创建输出目录
+RESULTS_OUTPUT_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025/Results/')
+# 为平均波形文件(.csv)创建一个专门的子文件夹
+WAVEFORM_OUTPUT_DIR = RESULTS_OUTPUT_DIR / 'averaged_waveforms' 
+#  为使用平均波形文件(.csv)绘制的图片创建一个专门的输出文件夹
+WAVEFORM_PLOT_DIR = RESULTS_OUTPUT_DIR / 'averaged_waveform_plots'
 
 # -----------------
 # 2. 信号预处理配置
@@ -25,18 +35,20 @@ PROCESSING_PARAMS = {
 # -----------------
 FILTER_PARAMS = {
     'bandpass': {
-        'order': 4,
+        'order': 8,
         'lowcut': 0.5,   # Hz, 低截止频率
-        'highcut': 45.0, # Hz, 高截止频率
+        'highcut': 30.0, # Hz, 高截止频率
     },
     'notch': {
         'freq': 50.0,    # Hz, 工频干扰频率
         'q_factor': 30.0,
     },
     'wavelet': { # 小波去噪配置
-        'enabled': False, # 设置为 True 来启用小波去噪
+        'enabled': True, # 设置为 True 来启用小波去噪
         'wavelet': 'sym8',
-        'level': 6,
+        'level': 7,
+        # 新增的小波去噪参数（肌电信号）
+        'denoise_levels': 3       # 只对前3层高频细节进行去噪
     }
 }
 
@@ -46,6 +58,7 @@ FILTER_PARAMS = {
 R_PEAK_PARAMS = {
     'min_height_factor': 0.4, # R峰最小高度因子
     'min_distance_ms': 200,   # R峰最小距离 (毫秒)
+    'height_percentile': 98,  # 设置用于计算阈值的百分位数
 }
 
 # -----------------
@@ -53,7 +66,7 @@ R_PEAK_PARAMS = {
 # -----------------
 AVERAGING_PARAMS = {
     'pre_r_ms': 100,  # R峰前的时间窗口 (毫秒)
-    'post_r_ms': 300, # R峰后的时间窗口 (毫秒)
+    'post_r_ms': 200, # R峰后的时间窗口 (毫秒)
 }
 
 
@@ -66,7 +79,7 @@ TIME_FREQUENCY_PARAMS = {
     # 'cwt'  - 只进行连续小波变换
     # 'both' - 两种方法都进行
     # 'none' - 不进行时频分析
-    'enabled_method': 'stft',
+    'enabled_method': 'none', # 可选值: 'stft', 'cwt', 'both', 'none'
 
     'stft': {
         'window_length': 256,       # STFT窗口长度
@@ -93,6 +106,8 @@ PLOTTING_PARAMS = {
     # 'dual'   - Bx和By整合到一张图中显示
     # 'both'   - 以上两种图都生成
     # 'none'   - 不生成任何图表
+    'generate_plots_per_file': False, # 是否为每个文件生成图表
+
     'filtering_plot': {
         'style': 'dual', 
     },
@@ -100,4 +115,12 @@ PLOTTING_PARAMS = {
         'style': 'dual',
     }
 }
+
+# 8. 保存选项配置
+# -----------------
+SAVING_PARAMS = {
+    # 设置为 True，则会在批量处理时保存每个样本的平均心拍波形
+    'save_averaged_waveform': True,
+}
+
 
