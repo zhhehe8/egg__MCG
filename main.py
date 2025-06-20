@@ -20,8 +20,22 @@ def main():
         print("数据加载失败，程序终止。")
         return
 
+    # --- 根据配置截取数据前N秒 ---
+    fs = config.PROCESSING_PARAMS['fs']
+    duration_s = config.PROCESSING_PARAMS.get('analysis_duration_s')
+
+    if duration_s is not None and duration_s > 0:
+        num_samples = int(duration_s * fs)
+        if len(bx_raw) > num_samples:
+            bx_raw = bx_raw[:num_samples]
+            by_raw = by_raw[:num_samples]
+            print(f"  信息: 已截取数据前 {duration_s} 秒进行分析。")
+        else:
+            print(f"  警告: 数据总时长小于 {duration_s} 秒，将分析完整数据。")
+    # --- 数据切片结束 ---
+
     # 准备时间轴
-    time_s = np.arange(len(bx_raw)) / config.PROCESSING_PARAMS['fs']
+    time_s = np.arange(len(bx_raw)) / fs
 
     # 信号反转
     if config.PROCESSING_PARAMS['reverse_Bx']:

@@ -6,10 +6,10 @@ from pathlib import Path
 # -----------------
 # 1. 文件路径配置
 # # -----------------
-# # """ 使用 Path 对象，这比简单的字符串更健壮，能更好地处理跨平台路径问题 """
-# BASE_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025') # 项目的基础目录
-# INPUT_FILE = BASE_DIR / 'B_egg' / 'B_egg_d20' / 'egg_d20_B30_t1_待破壳.txt' # 输入数据文件
-# OUTPUT_DIR = BASE_DIR / 'Figures' # 所有输出（如图片）的保存目录
+# """ 使用 Path 对象，这比简单的字符串更健壮，能更好地处理跨平台路径问题 """
+BASE_DIR = Path('/Users/yanchen/Desktop/Projects/egg_2025') # 项目的基础目录
+INPUT_FILE = BASE_DIR / 'B_egg' / 'B_egg_d20' / 'egg_d20_B30_t1_待破壳.txt' # 输入数据文件
+OUTPUT_DIR = BASE_DIR / 'Figures' # 所有输出（如图片）的保存目录
 
 """ ---- 批量处理数据版本 ---- """
 # 指向包含所有天数文件夹下的根目录
@@ -28,6 +28,7 @@ PROCESSING_PARAMS = {
     'fs': 1000,  # 采样率 (Hz)
     'reverse_Bx': False, # 是否反转Bx信号
     'reverse_By': False, # 是否反转By信号
+    'analysis_duration_s': 30,  # 只取每组数据的前30秒进行分析（若要全部分析： 0 或 None）
 }
 
 # -----------------

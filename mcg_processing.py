@@ -249,33 +249,46 @@ def calculate_morphology_params(averaged_beat: np.ndarray, fs: int, pre_samples:
 """ 单文件处理总管函数 """
 def process_single_file(filepath: Path, config: Dict) -> Optional[Tuple[Dict[str, Any], Optional[np.ndarray]]]:
     """
-    对单个数据文件执行完整的处理和参数提取流程。
-    返回一个包含结果的字典和一个平均波形数组。
+    对单个数据文件执行完整的处理和参数提取流程。(已增加数据切片功能)
     """
     print(f"\n--- 正在处理文件: {filepath.name} ---")
     
     # 1. 加载数据
-    bx_raw, _ = load_cardiac_data(filepath) # 这里只处理了Bx通道
+    bx_raw, by_raw = load_cardiac_data(filepath)
     if bx_raw is None: return None, None
+
+    fs = config['PROCESSING_PARAMS']['fs']
+    duration_s = config['PROCESSING_PARAMS'].get('analysis_duration_s')
+
+    # 根据配置截取数据前N秒
+    if duration_s is not None and duration_s > 0:
+        num_samples = int(duration_s * fs)
+        if len(bx_raw) > num_samples:
+            bx_raw = bx_raw[:num_samples]
+            by_raw = by_raw[:num_samples]
+            print(f"  信息: 已截取数据前 {duration_s} 秒进行分析。")
+        else:
+            print(f"  警告: 数据总时长小于 {duration_s} 秒，将分析完整数据。")
 
     # 提取日龄和胚胎ID
     day_match = re.search(r'[Dd](\d+)', filepath.name)
     day = int(day_match.group(1)) if day_match else -1
     embryo_id = filepath.stem
 
-    fs = config['PROCESSING_PARAMS']['fs']
+    # 信号反转
+    if config['PROCESSING_PARAMS']['reverse_Bx']:
+        bx_raw = -bx_raw
+    if config['PROCESSING_PARAMS']['reverse_By']:
+        by_raw = -by_raw
 
     # 2. 滤波
-    bx_filtered = apply_bandpass_filter(bx_raw, fs, **config['FILTER_PARAMS']['bandpass'])
-    bx_filtered = apply_notch_filter(bx_filtered, fs, **config['FILTER_PARAMS']['notch'])
+    bx_filtered_bandpass = apply_bandpass_filter(bx_raw, fs, **config['FILTER_PARAMS']['bandpass'])
+    bx_filtered_bandpass_notch = apply_notch_filter(bx_filtered_bandpass, fs, **config['FILTER_PARAMS']['notch'])
     if config['FILTER_PARAMS']['wavelet']['enabled']:
-        print("应用小波去噪以去除肌电信号...")
-        wavelet_args = {
-            'wavelet': config['FILTER_PARAMS']['wavelet']['wavelet'], 
-            'level': config['FILTER_PARAMS']['wavelet']['level'],
-            'denoise_levels': config['FILTER_PARAMS']['wavelet']['denoise_levels']
-            }
-        bx_filtered = apply_wavelet_denoise(bx_filtered, **wavelet_args)
+        wavelet_args = {'wavelet': config['FILTER_PARAMS']['wavelet']['wavelet'], 'level': config['FILTER_PARAMS']['wavelet']['level'], 'denoise_levels': config['FILTER_PARAMS']['wavelet']['denoise_levels']}
+        bx_filtered = apply_wavelet_denoise(bx_filtered_bandpass_notch, **wavelet_args)
+    else:
+        bx_filtered = bx_filtered_bandpass_notch
 
     # 3. R峰检测
     integer_peaks = find_r_peaks(bx_filtered, fs, **config['R_PEAK_PARAMS'])
@@ -284,23 +297,25 @@ def process_single_file(filepath: Path, config: Dict) -> Optional[Tuple[Dict[str
         return None, None
     precise_peaks = interpolate_r_peaks(bx_filtered, integer_peaks)
 
-    # 4. 计算HRV参数
-    hrv_params = calculate_hrv_params(precise_peaks, fs)
-
-    # 5. 计算形态学参数
+    # 4. 提取心拍并进行质量筛选
     pre_samples = int(config['AVERAGING_PARAMS']['pre_r_ms'] * fs / 1000)
     post_samples = int(config['AVERAGING_PARAMS']['post_r_ms'] * fs / 1000)
     all_beats = _extract_beats(bx_filtered, precise_peaks, pre_samples, post_samples)
-    averaged_beat = get_dtw_beat(all_beats)
     
-    # 如果平均失败，则跳过
+    # 逻辑简化：如果 all_beats 为空，直接在后面处理
+    beats_to_average = np.array(all_beats)
+
+    # 5. 计算HRV参数
+    hrv_params = calculate_hrv_params(precise_peaks, fs)
+    
+    # 6. 计算形态学参数
+    averaged_beat = get_dtw_beat(list(beats_to_average))
     if averaged_beat is None:
         print("  警告: 叠加平均失败, 跳过此文件。")
         return None, None
-        
     morphology_params = calculate_morphology_params(averaged_beat, fs, pre_samples)
 
-    # 6. 汇总结果
+    # 7. 汇总结果
     result_dict = {
         'filepath': str(filepath),
         'embryo_id': embryo_id,
@@ -309,5 +324,5 @@ def process_single_file(filepath: Path, config: Dict) -> Optional[Tuple[Dict[str
         **hrv_params,
         **morphology_params
     }
-    # 返回结果字典和计算出的DTW平均波形
+    
     return result_dict, averaged_beat
